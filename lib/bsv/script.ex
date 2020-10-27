@@ -18,6 +18,9 @@ defmodule BSV.Script do
         chunks: [:OP_FALSE, :OP_RETURN, "hello world"]
       }
   """
+
+  require Logger
+
   alias BSV.Script.OpCode
   alias BSV.Util
 
@@ -25,9 +28,9 @@ defmodule BSV.Script do
 
   @typedoc "Bitcoin Script"
   @type t :: %__MODULE__{
-    chunks: list,
-    coinbase: binary | nil
-  }
+          chunks: list,
+          coinbase: binary | nil
+        }
 
   @doc """
   Parses the given binary into a transaction script.
@@ -52,9 +55,10 @@ defmodule BSV.Script do
         ]
       }
   """
-  @spec parse(binary, keyword) :: __MODULE__.t
+  @spec parse(binary, keyword) :: __MODULE__.t()
   def parse(data, options \\ []) do
     encoding = Keyword.get(options, :encoding)
+
     Util.decode(data, encoding)
     |> parse_chunks([])
   end
@@ -63,23 +67,26 @@ defmodule BSV.Script do
     do: struct(__MODULE__, chunks: Enum.reverse(chunks))
 
   defp parse_chunks(<<op::integer, data::binary>>, chunks)
-    when op > 0 and op < 76
-  do
-    <<chunk::bytes-size(op), data::binary>> = data
+       when op > 0 and op < 76 do
+    size = chunk_size(data, op)
+    <<chunk::bytes-size(size), data::binary>> = data
     parse_chunks(data, [chunk | chunks])
   end
 
   defp parse_chunks(<<76, size::integer, data::binary>>, chunks) do
+    size = chunk_size(data, size)
     <<chunk::bytes-size(size), data::binary>> = data
     parse_chunks(data, [chunk | chunks])
   end
 
   defp parse_chunks(<<77, size::little-16, data::binary>>, chunks) do
+    size = chunk_size(data, size)
     <<chunk::bytes-size(size), data::binary>> = data
     parse_chunks(data, [chunk | chunks])
   end
 
   defp parse_chunks(<<78, size::little-32, data::binary>>, chunks) do
+    size = chunk_size(data, size)
     <<chunk::bytes-size(size), data::binary>> = data
     parse_chunks(data, [chunk | chunks])
   end
@@ -89,6 +96,19 @@ defmodule BSV.Script do
     parse_chunks(data, [opcode | chunks])
   end
 
+  defp chunk_size(data, size) do
+    data_size = byte_size(data)
+
+    if size > data_size do
+      Logger.warn(
+        "Expect to get #{size} byte(s), but the actual data size is #{data_size} byte(s)."
+      )
+
+      data_size
+    else
+      size
+    end
+  end
 
   @doc """
   Pushes a chunk into the given transaction script. The chunk can be any binary
@@ -108,10 +128,9 @@ defmodule BSV.Script do
         ]
       }
   """
-  @spec push(__MODULE__.t, binary | atom) :: __MODULE__.t
+  @spec push(__MODULE__.t(), binary | atom) :: __MODULE__.t()
   def push(%__MODULE__{} = script, data)
-    when is_atom(data) or is_integer(data)
-  do
+      when is_atom(data) or is_integer(data) do
     with {opcode, _opnum} <- OpCode.get(data) do
       push_chunk(script, opcode)
     else
@@ -126,7 +145,6 @@ defmodule BSV.Script do
     chunks = Enum.concat(script.chunks, [data])
     Map.put(script, :chunks, chunks)
   end
-
 
   @doc """
   Serialises the given script into a binary.
@@ -148,10 +166,12 @@ defmodule BSV.Script do
       ...> |> BSV.Script.serialize(encoding: :hex)
       "76a9146afc0d6bb578282ac0f6ad5c5af2294c1971210888ac"
   """
-  @spec serialize(__MODULE__.t, keyword) :: binary
+  @spec serialize(__MODULE__.t(), keyword) :: binary
   def serialize(script, options \\ [])
+
   def serialize(%__MODULE__{coinbase: nil} = script, options) do
     encoding = Keyword.get(options, :encoding)
+
     serialize_chunks(script.chunks, <<>>)
     |> Util.encode(encoding)
   end
@@ -169,17 +189,24 @@ defmodule BSV.Script do
   end
 
   defp serialize_chunks([chunk | chunks], data) when is_binary(chunk) do
-    suffix = case byte_size(chunk) do
-      op when op > 0 and op < 76 ->
-        <<op::integer, chunk::binary>>
-      len when len < 0x100 ->
-        <<76::integer, len::integer, chunk::binary>>
-      len when len < 0x10000 ->
-        <<77::integer, len::little-16, chunk::binary>>
-      len when len < 0x100000000 ->
-        <<78::integer, len::little-32, chunk::binary>>
-      op -> << op::integer >>
-    end
+    suffix =
+      case byte_size(chunk) do
+        op when op > 0 and op < 76 ->
+          <<op::integer, chunk::binary>>
+
+        len when len < 0x100 ->
+          <<76::integer, len::integer, chunk::binary>>
+
+        len when len < 0x10000 ->
+          <<77::integer, len::little-16, chunk::binary>>
+
+        len when len < 0x100000000 ->
+          <<78::integer, len::little-32, chunk::binary>>
+
+        op ->
+          <<op::integer>>
+      end
+
     serialize_chunks(chunks, data <> suffix)
   end
 
@@ -209,5 +236,4 @@ defmodule BSV.Script do
   @spec is_coinbase(__MODULE__.t()) :: boolean
   def is_coinbase(%__MODULE__{coinbase: nil}), do: false
   def is_coinbase(%__MODULE__{coinbase: data, chunks: []}) when data !== nil, do: true
-
 end
