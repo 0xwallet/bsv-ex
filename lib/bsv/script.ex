@@ -93,7 +93,12 @@ defmodule BSV.Script do
 
   defp parse_chunks(<<op::integer, data::binary>>, chunks) do
     {opcode, _opnum} = OpCode.get(op)
-    parse_chunks(data, [opcode | chunks])
+
+    if :OP_RETURN == opcode do
+      parse_chunks(<<>>, [data, opcode | chunks])
+    else
+      parse_chunks(data, [opcode | chunks])
+    end
   end
 
   defp chunk_size(data, size) do
@@ -184,8 +189,14 @@ defmodule BSV.Script do
   defp serialize_chunks([], data), do: data
 
   defp serialize_chunks([chunk | chunks], data) when is_atom(chunk) do
-    {_opcode, opnum} = OpCode.get(chunk)
-    serialize_chunks(chunks, <<data::binary, opnum::integer>>)
+    {opcode, opnum} = OpCode.get(chunk)
+
+    if :OP_RETURN == opcode and length(chunks) == 1 do
+      [rest | _] = chunks
+      serialize_chunks([], <<data::binary, opnum::integer, rest::binary>>)
+    else
+      serialize_chunks(chunks, <<data::binary, opnum::integer>>)
+    end
   end
 
   defp serialize_chunks([chunk | chunks], data) when is_binary(chunk) do

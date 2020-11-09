@@ -175,7 +175,8 @@ defmodule BSV.Script.OpCode do
       {val, opnum}
     else
       Logger.warn("Unknown OP Code #{val}")
-      {String.to_atom("OP_UNKNOWN_#{val}"), val}
+      "OP_UNKNOWN_" <> opnum = val |> Atom.to_string()
+      {val, String.to_integer(opnum)}
     end
   end
 
