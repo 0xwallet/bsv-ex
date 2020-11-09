@@ -170,7 +170,13 @@ defmodule BSV.Script.OpCode do
   @spec get(integer | atom | String.t()) :: {atom, integer}
   def get(val) when is_atom(val) do
     opnum = @op_codes[val]
-    if opnum, do: {val, opnum}, else: nil
+
+    if opnum do
+      {val, opnum}
+    else
+      Logger.warn("Unknown OP Code #{val}")
+      {String.to_atom("OP_UNKNOWN_#{val}"), val}
+    end
   end
 
   def get(0), do: {:OP_FALSE, 0}
