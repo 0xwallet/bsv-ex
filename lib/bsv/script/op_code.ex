@@ -164,8 +164,11 @@ defmodule BSV.Script.OpCode do
       iex> BSV.Script.OpCode.get 106
       {:OP_RETURN, 106}
 
+      iex> BSV.Script.OpCode.get :OP_UNKNOWN_233
+      {:OP_UNKNOWN_233, 233}
+
       iex> BSV.Script.OpCode.get :UNKNOWN_CODE
-      nil
+      ** (MatchError) no match of right hand side value: "UNKNOWN_CODE"
   """
   @spec get(integer | atom | String.t()) :: {atom, integer}
   def get(val) when is_atom(val) do

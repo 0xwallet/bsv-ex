@@ -10,9 +10,9 @@ defmodule BSV.Script do
       ...> |> BSV.Script.push(:OP_RETURN)
       ...> |> BSV.Script.push("hello world")
       ...> |> BSV.Script.serialize(encoding: :hex)
-      "006a0b68656c6c6f20776f726c64"
+      "006a68656c6c6f20776f726c64"
 
-      iex> "006a0b68656c6c6f20776f726c64"
+      iex> "006a68656c6c6f20776f726c64"
       ...> |> BSV.Script.parse(encoding: :hex)
       %BSV.Script{
         chunks: [:OP_FALSE, :OP_RETURN, "hello world"]
