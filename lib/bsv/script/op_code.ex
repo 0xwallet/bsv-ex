@@ -3,6 +3,8 @@ defmodule BSV.Script.OpCode do
   Module for accessing OP code atoms and byte integers.
   """
 
+  require Logger
+
   @op_codes %{
     # push value
     OP_FALSE: 0,
@@ -89,7 +91,6 @@ defmodule BSV.Script.OpCode do
     OP_ABS: 144,
     OP_NOT: 145,
     OP_0NOTEQUAL: 146,
-
     OP_ADD: 147,
     OP_SUB: 148,
     OP_MUL: 149,
@@ -97,7 +98,6 @@ defmodule BSV.Script.OpCode do
     OP_MOD: 151,
     OP_LSHIFT: 152,
     OP_RSHIFT: 153,
-
     OP_BOOLAND: 154,
     OP_BOOLOR: 155,
     OP_NUMEQUAL: 156,
@@ -109,7 +109,6 @@ defmodule BSV.Script.OpCode do
     OP_GREATERTHANOREQUAL: 162,
     OP_MIN: 163,
     OP_MAX: 164,
-
     OP_WITHIN: 165,
 
     # crypto
@@ -123,7 +122,6 @@ defmodule BSV.Script.OpCode do
     OP_CHECKSIGVERIFY: 173,
     OP_CHECKMULTISIG: 174,
     OP_CHECKMULTISIGVERIFY: 175,
-
     OP_CHECKLOCKTIMEVERIFY: 177,
     OP_CHECKSEQUENCEVERIFY: 178,
 
@@ -145,13 +143,11 @@ defmodule BSV.Script.OpCode do
     OP_INVALIDOPCODE: 255
   }
 
-
   @doc """
   Returns a map of all OP codes.
   """
   @spec all :: map
   def all, do: @op_codes
-
 
   @doc """
   Returns a tuple caintaining the OP code and OP code byte number, depending on
@@ -171,7 +167,7 @@ defmodule BSV.Script.OpCode do
       iex> BSV.Script.OpCode.get :UNKNOWN_CODE
       nil
   """
-  @spec get(integer | atom | String.t) :: {atom, integer}
+  @spec get(integer | atom | String.t()) :: {atom, integer}
   def get(val) when is_atom(val) do
     opnum = @op_codes[val]
     if opnum, do: {val, opnum}, else: nil
@@ -179,10 +175,15 @@ defmodule BSV.Script.OpCode do
 
   def get(0), do: {:OP_FALSE, 0}
 
-  def get(val) when is_integer(val),
-    do: Enum.find(@op_codes, fn {_k, v} -> v == val end)
+  def get(val) when is_integer(val) do
+    if op_code = Enum.find(@op_codes, fn {_k, v} -> v == val end) do
+      op_code
+    else
+      Logger.warn("Unknown OP Code #{val}")
+      {String.to_atom("OP_UNKNOWN_#{val}"), val}
+    end
+  end
 
   def get(val) when is_binary(val),
-    do: val |> String.upcase |> String.to_atom |> get
-  
+    do: val |> String.upcase() |> String.to_atom() |> get
 end
