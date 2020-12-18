@@ -18,13 +18,12 @@ defmodule BSV.Transaction.Input do
 
   @typedoc "Transaction input"
   @type t :: %__MODULE__{
-    output_txid: String.t,
-    output_index: integer,
-    script: binary,
-    sequence: integer,
-    utxo: Output.t | nil
-  }
-
+          output_txid: String.t(),
+          output_index: integer,
+          script: BSV.Script.t() | nil,
+          sequence: integer,
+          utxo: Output.t() | nil
+        }
 
   @doc """
   Parse the given binary into a transaction input. Returns a tuple containing
@@ -41,25 +40,27 @@ defmodule BSV.Transaction.Input do
       BSV.Transaction.Input.parse(data)
       {%BSV.Trasaction.Input{}, ""}
   """
-  @spec parse(binary, keyword) :: {__MODULE__.t, binary}
+  @spec parse(binary, keyword) :: {__MODULE__.t(), binary}
   def parse(data, options \\ []) do
     encoding = Keyword.get(options, :encoding)
 
-    <<txid::bytes-32, index::little-32, data::binary>> = data
-    |> Util.decode(encoding)
+    <<txid::bytes-32, index::little-32, data::binary>> =
+      data
+      |> Util.decode(encoding)
+
     {script, data} = VarBin.parse_bin(data)
     <<sequence::little-32, data::binary>> = data
 
-    txid = txid |> Util.reverse_bin |> Util.encode(:hex)
+    txid = txid |> Util.reverse_bin() |> Util.encode(:hex)
 
-    {struct(__MODULE__, [
-      output_txid: txid,
-      output_index: index,
-      script: (if is_null(txid, index), do: Script.get_coinbase(script), else: Script.parse(script)),
-      sequence: sequence
-    ]), data}
+    {struct(__MODULE__,
+       output_txid: txid,
+       output_index: index,
+       script:
+         if(is_null(txid, index), do: Script.get_coinbase(script), else: Script.parse(script)),
+       sequence: sequence
+     ), data}
   end
-
 
   @doc """
   Serialises the given transaction input struct into a binary.
@@ -75,18 +76,20 @@ defmodule BSV.Transaction.Input do
       BSV.Transaction.Input.serialize(input)
       <<binary>>
   """
-  @spec serialize(__MODULE__.t, keyword) :: binary
+  @spec serialize(__MODULE__.t(), keyword) :: binary
   def serialize(%__MODULE__{} = input, options \\ []) do
     encoding = Keyword.get(options, :encoding)
 
-    txid = input.output_txid
-    |> Util.decode(:hex)
-    |> Util.reverse_bin
+    txid =
+      input.output_txid
+      |> Util.decode(:hex)
+      |> Util.reverse_bin()
 
-    script = case input.script do
-      %Script{} = s -> Script.serialize(s) |> VarBin.serialize_bin
-      _ -> <<>>
-    end
+    script =
+      case input.script do
+        %Script{} = s -> Script.serialize(s) |> VarBin.serialize_bin()
+        _ -> <<>>
+      end
 
     <<
       txid::binary,
@@ -97,12 +100,11 @@ defmodule BSV.Transaction.Input do
     |> Util.encode(encoding)
   end
 
-
   @doc """
   Returns the size of the given input. If the input has a script, it's actual
   size is calculated, otherwise a P2PKH input is estimated.
   """
-  @spec get_size(__MODULE__.t) :: integer
+  @spec get_size(__MODULE__.t()) :: integer
   def get_size(%__MODULE__{script: script} = tx) do
     case script do
       nil -> 40 + @p2pkh_script_size
@@ -125,14 +127,14 @@ defmodule BSV.Transaction.Input do
     false
 
   """
-  @spec is_null(__MODULE__.t) :: boolean
+  @spec is_null(__MODULE__.t()) :: boolean
   def is_null(%__MODULE__{output_txid: transaction, output_index: index}) do
     is_null(transaction, index)
   end
 
   @spec is_null(String.t(), non_neg_integer) :: boolean
   defp is_null(previous_transaction, previous_index) do
-    previous_transaction == "0000000000000000000000000000000000000000000000000000000000000000" and previous_index == 0xFFFFFFFF
+    previous_transaction == "0000000000000000000000000000000000000000000000000000000000000000" and
+      previous_index == 0xFFFFFFFF
   end
-
 end
