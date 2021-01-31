@@ -21,7 +21,8 @@ defmodule BSV.Script do
 
   require Logger
 
-  alias BSV.Script.OpCode
+  alias BSV.Script.{OpCode, PublicKeyHash}
+  alias BSV.Address
   alias BSV.Util
 
   defstruct chunks: [], coinbase: nil
@@ -247,4 +248,36 @@ defmodule BSV.Script do
   @spec is_coinbase(__MODULE__.t()) :: boolean
   def is_coinbase(%__MODULE__{coinbase: nil}), do: false
   def is_coinbase(%__MODULE__{coinbase: data, chunks: []}) when data !== nil, do: true
+
+  @doc """
+  Returns a Base58Check encoded string from the given Bitcoin script struct.
+
+  ## Examples
+
+      iex> "76a9146afc0d6bb578282ac0f6ad5c5af2294c1971210888ac"
+      ...> |> BSV.Script.parse(encoding: :hex)
+      ...> |> BSV.Script.address()
+      "1AkgaF8CPJ32KPPeV91caYfGvAKoYqk586"
+  """
+  @spec address(__MODULE__.t()) :: String.t() | nil
+  def address(%__MODULE__{chunks: chunks} = script) do
+    script_pub_key? =
+      match?(
+        [
+          :OP_DUP,
+          :OP_HASH160,
+          _address_hash,
+          :OP_EQUALVERIFY,
+          :OP_CHECKSIG
+        ],
+        chunks
+      )
+
+    if script_pub_key? do
+      hash = PublicKeyHash.get_hash(script)
+
+      %Address{hash: hash}
+      |> Address.to_string()
+    end
+  end
 end
