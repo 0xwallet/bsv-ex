@@ -43,6 +43,7 @@ defmodule BSV.Transaction.Input do
   @spec parse(binary, keyword) :: {__MODULE__.t(), binary}
   def parse(data, options \\ []) do
     encoding = Keyword.get(options, :encoding)
+    filter = Keyword.get(options, :filter) || (& &1)
 
     <<txid::bytes-32, index::little-32, data::binary>> =
       data
@@ -53,13 +54,23 @@ defmodule BSV.Transaction.Input do
 
     txid = txid |> Util.reverse_bin() |> Util.encode(:hex)
 
-    {struct(__MODULE__,
-       output_txid: txid,
-       output_index: index,
-       script:
-         if(is_null(txid, index), do: Script.get_coinbase(script), else: Script.parse(script)),
-       sequence: sequence
-     ), data}
+    script =
+      if is_null(txid, index) do
+        Script.get_coinbase(script)
+      else
+        Script.parse(script)
+      end
+
+    input =
+      struct(__MODULE__,
+        output_txid: txid,
+        output_index: index,
+        script: script,
+        sequence: sequence
+      )
+      |> filter.()
+
+    {input, data}
   end
 
   @doc """

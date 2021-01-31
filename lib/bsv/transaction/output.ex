@@ -34,6 +34,7 @@ defmodule BSV.Transaction.Output do
   @spec parse(binary, keyword) :: {__MODULE__.t(), binary}
   def parse(data, options \\ []) do
     encoding = Keyword.get(options, :encoding)
+    filter = Keyword.get(options, :filter) || (& &1)
 
     <<satoshis::little-64, data::binary>> =
       data
@@ -41,10 +42,14 @@ defmodule BSV.Transaction.Output do
 
     {script, data} = VarBin.parse_bin(data)
 
-    {struct(__MODULE__,
-       satoshis: satoshis,
-       script: Script.parse(script)
-     ), data}
+    output =
+      struct(__MODULE__,
+        satoshis: satoshis,
+        script: Script.parse(script)
+      )
+      |> filter.()
+
+    {output, data}
   end
 
   @doc """

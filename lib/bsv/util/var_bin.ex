@@ -4,7 +4,6 @@ defmodule BSV.Util.VarBin do
   binaries and structs.
   """
 
-
   @doc """
   Parses the given binary into an integer. Returns a tuple containing the
   decoded integer and any remaining binary data.
@@ -23,7 +22,6 @@ defmodule BSV.Util.VarBin do
   def parse_int(<<255, size::little-64, data::binary>>), do: {size, data}
   def parse_int(<<size::integer, data::binary>>), do: {size, data}
 
-
   @doc """
   Serializes the given integer into a binary.
 
@@ -40,7 +38,6 @@ defmodule BSV.Util.VarBin do
   def serialize_int(int) when int < 0x10000, do: <<253, int::little-16>>
   def serialize_int(int) when int < 0x100000000, do: <<254, int::little-32>>
   def serialize_int(int), do: <<255, int::little-64>>
-
 
   @doc """
   Parses the given binary into a chunk of binary data, using the first byte(s)
@@ -59,7 +56,6 @@ defmodule BSV.Util.VarBin do
     {bin, data}
   end
 
-
   @doc """
   Prefixes the given binary with a variable length integer to indicate the size
   of the following binary,
@@ -71,12 +67,13 @@ defmodule BSV.Util.VarBin do
   """
   @spec serialize_bin(binary) :: binary
   def serialize_bin(data) do
-    size = data
-    |> byte_size
-    |> serialize_int
+    size =
+      data
+      |> byte_size
+      |> serialize_int
+
     size <> data
   end
-
 
   @doc """
   Parses the given binary into a list of parsed structs, using the first byte(s)
@@ -103,10 +100,17 @@ defmodule BSV.Util.VarBin do
 
   defp parse_items(data, size, items, cb) do
     {item, data} = cb.(data)
-    parse_items(data, size-1, [item | items], cb)
+
+    items =
+      if item do
+        [item | items]
+      else
+        items
+      end
+
+    parse_items(data, size - 1, items, cb)
   end
 
-  
   @doc """
   Serializes the given list of items into a binary, first by prefixing the
   binary with a variable length integer to indicate the number of items, and
@@ -133,5 +137,4 @@ defmodule BSV.Util.VarBin do
     bin = callback.(item)
     serialize_items(items, data <> bin, callback)
   end
-
 end

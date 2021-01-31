@@ -61,6 +61,9 @@ defmodule BSV.Block do
   @spec parse(binary, boolean, keyword) :: {__MODULE__.t(), binary}
   def parse(data, include_transactions \\ false, options \\ []) do
     encoding = Keyword.get(options, :encoding)
+    input_filter = Keyword.get(options, :input_filter)
+    output_filter = Keyword.get(options, :output_filter)
+    transaction_filter = Keyword.get(options, :transaction_filter)
 
     <<block_bytes::binary-size(80), rest::binary>> = data |> Util.decode(encoding)
 
@@ -69,7 +72,14 @@ defmodule BSV.Block do
 
     {transactions, rest} =
       if include_transactions do
-        rest |> VarBin.parse_items(&Transaction.parse/1)
+        rest
+        |> VarBin.parse_items(
+          &Transaction.parse(&1,
+            input_filter: input_filter,
+            output_filter: output_filter,
+            transaction_filter: transaction_filter
+          )
+        )
       else
         {nil, rest}
       end

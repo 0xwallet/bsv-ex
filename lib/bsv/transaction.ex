@@ -51,18 +51,38 @@ defmodule BSV.Transaction do
   @spec parse(binary, keyword) :: {__MODULE__.t(), binary}
   def parse(data, options \\ []) do
     encoding = Keyword.get(options, :encoding)
+    input_filter = Keyword.get(options, :input_filter) || (& &1)
+    output_filter = Keyword.get(options, :output_filter) || (& &1)
+    transaction_filter = Keyword.get(options, :transaction_filter) || (&transaction_filter/1)
 
     <<version::little-32, data::binary>> = data |> Util.decode(encoding)
-    {inputs, data} = data |> VarBin.parse_items(&Input.parse/1)
-    {outputs, data} = data |> VarBin.parse_items(&Output.parse/1)
+    {inputs, data} = data |> VarBin.parse_items(&Input.parse(&1, filter: input_filter))
+    {outputs, data} = data |> VarBin.parse_items(&Output.parse(&1, filter: output_filter))
     <<lock_time::little-32, data::binary>> = data
 
-    {struct(__MODULE__,
-       version: version,
-       inputs: inputs,
-       outputs: outputs,
-       lock_time: lock_time
-     ), data}
+    transaction =
+      struct(__MODULE__,
+        version: version,
+        inputs: inputs,
+        outputs: outputs,
+        lock_time: lock_time
+      )
+      |> transaction_filter.()
+
+    {transaction, data}
+  end
+
+  defp transaction_filter(%__MODULE__{inputs: inputs, outputs: outputs})
+       when is_nil(inputs) and is_nil(outputs) do
+    nil
+  end
+
+  defp transaction_filter(%__MODULE__{inputs: inputs, outputs: outputs} = transaction) do
+    if Enum.empty?(inputs) && Enum.empty?(outputs) do
+      nil
+    else
+      transaction
+    end
   end
 
   @doc """
