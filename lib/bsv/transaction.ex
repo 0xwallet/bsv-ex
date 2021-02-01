@@ -55,10 +55,10 @@ defmodule BSV.Transaction do
     output_filter = Keyword.get(options, :output_filter) || (& &1)
     transaction_filter = Keyword.get(options, :transaction_filter) || (&transaction_filter/1)
 
-    <<version::little-32, data::binary>> = data |> Util.decode(encoding)
+    {<<version::little-32>>, data} = data |> Util.decode(encoding) |> VarBin.read_bytes(4)
     {inputs, data} = data |> VarBin.parse_items(&Input.parse(&1, filter: input_filter))
     {outputs, data} = data |> VarBin.parse_items(&Output.parse(&1, filter: output_filter))
-    <<lock_time::little-32, data::binary>> = data
+    {<<lock_time::little-32>>, data} = data |> VarBin.read_bytes(4)
 
     transaction =
       struct(__MODULE__,
