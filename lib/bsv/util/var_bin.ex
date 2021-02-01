@@ -28,7 +28,7 @@ defmodule BSV.Util.VarBin do
 
   def parse_int(<<size::integer, data::binary>> = binary) when is_binary(binary), do: {size, data}
 
-  def parse_int(file) do
+  def parse_int(file) when not is_binary(file) do
     size =
       case file |> IO.binread(1) do
         <<253>> ->
