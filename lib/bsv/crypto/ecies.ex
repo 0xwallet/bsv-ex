@@ -18,7 +18,6 @@ defmodule BSV.Crypto.ECIES do
   alias BSV.Crypto.ECDSA
   alias BSV.Crypto.ECDSA.{PublicKey, PrivateKey}
 
-
   @doc """
   Encrypts the given data with the given public key.
 
@@ -33,25 +32,25 @@ defmodule BSV.Crypto.ECIES do
       BSV.Crypto.ECIES.encrypt("hello world", public_key)
       << encrypted binary >>
   """
-  @spec encrypt(binary, PublicKey.t | binary, keyword) :: binary
+  @spec encrypt(binary, PublicKey.t() | binary, keyword) :: binary
   def encrypt(data, public_key, options \\ [])
 
-  def encrypt(data, %PublicKey{} = public_key, options) do
-    encrypt(data, public_key.public_key, options)
+  def encrypt(data, %PublicKey{point: point}, options) do
+    encrypt(data, point, options)
   end
 
   def encrypt(data, public_key, options) when is_binary(public_key) do
     encoding = Keyword.get(options, :encoding)
 
     # Generate ephemeral keypair
-    {ephemeral_pubkey, ephemeral_privkey} = ECDSA.generate_key_pair
+    {ephemeral_pubkey, ephemeral_privkey} = ECDSA.generate_key_pair()
 
     # Derive ECDH key and sha512 hash
-    key_hash = with {:ok, ecdh_key} <-
-        :libsecp256k1.ec_pubkey_tweak_mul(public_key, ephemeral_privkey)
-    do
-      ecdh_key |> PublicKey.compress |> Hash.sha512
-    end
+    key_hash =
+      with {:ok, ecdh_key} <-
+             :libsecp256k1.ec_pubkey_tweak_mul(public_key, ephemeral_privkey) do
+        ecdh_key |> PublicKey.compress() |> Hash.sha512()
+      end
 
     # iv and keyE used in AES, keyM used in HMAC
     <<iv::binary-16, keyE::binary-16, keyM::binary-32>> = key_hash
@@ -62,7 +61,6 @@ defmodule BSV.Crypto.ECIES do
     <<encrypted::binary, mac::binary>>
     |> Util.encode(encoding)
   end
-
 
   @doc """
   Decrypts the encrypted data with the given private key.
@@ -78,7 +76,7 @@ defmodule BSV.Crypto.ECIES do
       BSV.Crypto.ECIES.decrypt(encrypted_binary, private_key)
       << decrypted binary >>
   """
-  @spec decrypt(binary, PrivateKey.t | binary, keyword) :: binary
+  @spec decrypt(binary, PrivateKey.t() | binary, keyword) :: binary
   def decrypt(data, private_key, options \\ [])
 
   def decrypt(data, %PrivateKey{} = private_key, options) do
@@ -92,22 +90,26 @@ defmodule BSV.Crypto.ECIES do
     len = byte_size(encrypted) - 69
 
     <<
-      "BIE1",                         # magic bytes
-      ephemeral_pubkey::binary-33,    # ephermeral pubkey
-      ciphertext::binary-size(len),   # ciphertext
-      mac::binary-32                  # mac hash
+      # magic bytes
+      "BIE1",
+      # ephermeral pubkey
+      ephemeral_pubkey::binary-33,
+      # ciphertext
+      ciphertext::binary-size(len),
+      # mac hash
+      mac::binary-32
     >> = encrypted
 
     # Derive ECDH key and sha512 hash
-    key_hash = with {:ok, pub_key} <-
-        :libsecp256k1.ec_pubkey_decompress(ephemeral_pubkey),
-      {:ok, ecdh_key} <-
-        :libsecp256k1.ec_pubkey_tweak_mul(pub_key, private_key)
-    do
-      ecdh_key |> PublicKey.compress |> Hash.sha512
-    else
-      err -> raise err
-    end
+    key_hash =
+      with {:ok, pub_key} <-
+             :libsecp256k1.ec_pubkey_decompress(ephemeral_pubkey),
+           {:ok, ecdh_key} <-
+             :libsecp256k1.ec_pubkey_tweak_mul(pub_key, private_key) do
+        ecdh_key |> PublicKey.compress() |> Hash.sha512()
+      else
+        err -> raise err
+      end
 
     # iv and keyE used in AES, keyM used in HMAC
     <<iv::binary-16, keyE::binary-16, keyM::binary-32>> = key_hash
@@ -115,8 +117,9 @@ defmodule BSV.Crypto.ECIES do
     cond do
       Hash.hmac(encrypted, :sha256, keyM) == mac ->
         raise "mac validation failed"
-      true -> AES.decrypt(ciphertext, :cbc, keyE, iv: iv)
+
+      true ->
+        AES.decrypt(ciphertext, :cbc, keyE, iv: iv)
     end
   end
-
 end
