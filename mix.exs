@@ -14,7 +14,7 @@ defmodule BSV.MixProject do
       docs: [
         main: "BSV",
         groups_for_modules: [
-          "Crypto": [
+          Crypto: [
             BSV.Crypto.AES,
             BSV.Crypto.ECDSA,
             BSV.Crypto.ECDSA.PrivateKey,
@@ -39,7 +39,7 @@ defmodule BSV.MixProject do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      extra_applications: [:logger]
+      extra_applications: [:logger, :crypto]
     ]
   end
 
