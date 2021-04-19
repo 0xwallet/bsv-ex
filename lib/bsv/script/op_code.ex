@@ -164,8 +164,8 @@ defmodule BSV.Script.OpCode do
       iex> BSV.Script.OpCode.get 106
       {:OP_RETURN, 106}
 
-      iex> BSV.Script.OpCode.get :OP_UNKNOWN_233
-      {:OP_UNKNOWN_233, 233}
+      iex> import ExUnit.CaptureLog
+      iex> capture_log(fn -> {:OP_UNKNOWN_233, 233} = BSV.Script.OpCode.get(:OP_UNKNOWN_233) end)
 
       iex> BSV.Script.OpCode.get :UNKNOWN_CODE
       ** (MatchError) no match of right hand side value: "UNKNOWN_CODE"
@@ -177,8 +177,8 @@ defmodule BSV.Script.OpCode do
     if opnum do
       {val, opnum}
     else
-      Logger.warn("Unknown OP Code #{val}")
       "OP_UNKNOWN_" <> opnum = val |> Atom.to_string()
+      Logger.warn("Unknown OP Code #{val}")
       {val, String.to_integer(opnum)}
     end
   end
