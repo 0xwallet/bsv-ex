@@ -4,7 +4,7 @@ defmodule BSV.MixProject do
   def project do
     [
       app: :bsv,
-      version: "0.3.0",
+      version: "0.4.0",
       elixir: "~> 1.9",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
@@ -14,7 +14,7 @@ defmodule BSV.MixProject do
       docs: [
         main: "BSV",
         groups_for_modules: [
-          Crypto: [
+          "Crypto": [
             BSV.Crypto.AES,
             BSV.Crypto.ECDSA,
             BSV.Crypto.ECDSA.PrivateKey,
@@ -30,7 +30,7 @@ defmodule BSV.MixProject do
       package: [
         name: "bsv",
         files: ~w(lib priv .formatter.exs mix.exs README.md LICENSE.md),
-        licenses: ["MIT"],
+        licenses: ["Apache-2.0"],
         links: %{"GitHub" => "https://github.com/libitx/bsv-ex"}
       ]
     ]
@@ -39,7 +39,7 @@ defmodule BSV.MixProject do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      extra_applications: [:logger, :crypto, :public_key]
+      extra_applications: [:crypto, :logger, :public_key]
     ]
   end
 
@@ -47,8 +47,9 @@ defmodule BSV.MixProject do
   defp deps do
     [
       {:basefiftyeight, "~> 0.1"},
+      {:curvy, "~> 0.2"},
       {:ex_doc, "~> 0.21", only: :dev, runtime: false},
-      {:libsecp256k1, "~> 0.1"}
+      {:libsecp256k1, "~> 0.1", optional: true}
     ]
   end
 end

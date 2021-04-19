@@ -18,10 +18,9 @@ defmodule BSV.Script do
         chunks: [:OP_FALSE, :OP_RETURN, "hello world"]
       }
   """
-
   require Logger
 
-  alias BSV.Script.{OpCode, PublicKeyHash}
+  alias BSV.Script.{ASM, OpCode, PublicKeyHash}
   alias BSV.Address
   alias BSV.Util
 
@@ -40,7 +39,7 @@ defmodule BSV.Script do
 
   The accepted options are:
 
-  * `:encoding` - Optionally decode the binary with either the `:base64` or `:hex` encoding scheme.
+  * `:encoding` - Optionally decode the binary with either the `:asm`, `:base64` or `:hex` encoding scheme.
 
   ## Examples
 
@@ -58,10 +57,15 @@ defmodule BSV.Script do
   """
   @spec parse(binary, keyword) :: __MODULE__.t()
   def parse(data, options \\ []) do
-    encoding = Keyword.get(options, :encoding)
+    case Keyword.get(options, :encoding) do
+      :asm ->
+        ASM.parse(data)
 
-    Util.decode(data, encoding)
-    |> parse_chunks([])
+      encoding ->
+        data
+        |> Util.decode(encoding)
+        |> parse_chunks([])
+    end
   end
 
   defp parse_chunks(<<>>, chunks),
@@ -176,10 +180,15 @@ defmodule BSV.Script do
   def serialize(script, options \\ [])
 
   def serialize(%__MODULE__{coinbase: nil} = script, options) do
-    encoding = Keyword.get(options, :encoding)
+    case Keyword.get(options, :encoding) do
+      :asm ->
+        ASM.serialize(script)
 
-    serialize_chunks(script.chunks, <<>>)
-    |> Util.encode(encoding)
+      encoding ->
+        script.chunks
+        |> serialize_chunks(<<>>)
+        |> Util.encode(encoding)
+    end
   end
 
   def serialize(%__MODULE__{coinbase: coinbase, chunks: []}, options) do
