@@ -17,7 +17,6 @@ defmodule BSV.Crypto.ECDSA do
 
   @named_curve :secp256k1
 
-
   @doc """
   Generates a new ECDSA private key.
 
@@ -33,13 +32,13 @@ defmodule BSV.Crypto.ECDSA do
       ...> private_key.__struct__ == BSV.Crypto.ECDSA.PrivateKey
       true
   """
-  @spec generate_key(keyword) :: PrivateKey.t
+  @spec generate_key(keyword) :: PrivateKey.t()
   def generate_key(options \\ []) do
     named_curve = Keyword.get(options, :named_curve, @named_curve)
-    :public_key.generate_key({:namedCurve, named_curve})
-    |> PrivateKey.from_sequence
-  end
 
+    :public_key.generate_key({:namedCurve, named_curve})
+    |> PrivateKey.from_sequence()
+  end
 
   @doc """
   Generates a new ECDSA public and private key pair, returned as a tuple containing two binaries.
@@ -68,12 +67,12 @@ defmodule BSV.Crypto.ECDSA do
   def generate_key_pair(options \\ []) do
     named_curve = Keyword.get(options, :named_curve, @named_curve)
     private_key = Keyword.get(options, :private_key)
+
     cond do
       is_binary(private_key) -> :crypto.generate_key(:ecdh, named_curve, private_key)
       true -> :crypto.generate_key(:ecdh, named_curve)
     end
   end
-
 
   @doc """
   Creates a signature for the given message, using the given private key.
@@ -90,7 +89,7 @@ defmodule BSV.Crypto.ECDSA do
       BSV.Crypto.ECDSA.sign("hello world", private_key, encoding: :base64)
       << signature >>
   """
-  @spec sign(binary, PrivateKey.t | binary, keyword) :: binary
+  @spec sign(binary, PrivateKey.t() | binary, keyword) :: binary
   def sign(message, private_key, options \\ [])
 
   def sign(message, %PrivateKey{} = ecdsa_key, options) do
@@ -108,7 +107,6 @@ defmodule BSV.Crypto.ECDSA do
     |> Util.encode(encoding)
   end
 
-
   @doc """
   Verify the given message and signature, using the given public key.
 
@@ -120,18 +118,24 @@ defmodule BSV.Crypto.ECDSA do
   * `:named_curve` - Specific the elliptic curve name. Defaults to `:secp256k1`.
 
   ## Examples
-  
+
       BSV.Crypto.ECDSA.verify(signature, message, public_key)
       true
   """
-  @spec verify(binary, binary, PublicKey.t | binary, keyword) :: boolean
+  @spec verify(binary, binary, PublicKey.t() | binary, keyword) :: boolean
   def verify(signature, message, public_key, options \\ [])
 
   def verify(signature, message, %PublicKey{} = public_key, options) do
     encoding = Keyword.get(options, :encoding)
     named_curve = Keyword.get(options, :named_curve, @named_curve)
     signature = Util.decode(signature, encoding)
-    :public_key.verify(message, :sha256, signature, {PublicKey.as_sequence(public_key), {:namedCurve, named_curve}})
+
+    :public_key.verify(
+      message,
+      :sha256,
+      signature,
+      {PublicKey.as_sequence(public_key), {:namedCurve, named_curve}}
+    )
   end
 
   def verify(signature, message, public_key, options) when is_binary(public_key) do
@@ -140,7 +144,6 @@ defmodule BSV.Crypto.ECDSA do
     signature = Util.decode(signature, encoding)
     :crypto.verify(:ecdsa, :sha256, message, signature, [public_key, named_curve])
   end
-
 
   @doc """
   Decodes the given PEM string into a ECDSA key.
@@ -154,14 +157,13 @@ defmodule BSV.Crypto.ECDSA do
       ...> imported_key == ecdsa_key
       true
   """
-  @spec pem_decode(binary) :: PrivateKey.t
+  @spec pem_decode(binary) :: PrivateKey.t()
   def pem_decode(pem) do
     :public_key.pem_decode(pem)
-    |> List.first
-    |> :public_key.pem_entry_decode
-    |> PrivateKey.from_sequence
+    |> List.first()
+    |> :public_key.pem_entry_decode()
+    |> PrivateKey.from_sequence()
   end
-
 
   @doc """
   Encodes the given public or private key into a PEM string.
@@ -173,10 +175,9 @@ defmodule BSV.Crypto.ECDSA do
       ...> |> String.starts_with?("-----BEGIN EC PRIVATE KEY-----")
       true
   """
-  @spec pem_encode(PrivateKey.t) :: binary
+  @spec pem_encode(PrivateKey.t()) :: binary
   def pem_encode(%PrivateKey{} = ecdsa_key) do
     pem_entry = :public_key.pem_entry_encode(:ECPrivateKey, PrivateKey.as_sequence(ecdsa_key))
     :public_key.pem_encode([pem_entry])
   end
-  
 end

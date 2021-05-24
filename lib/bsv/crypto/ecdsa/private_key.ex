@@ -8,22 +8,22 @@ defmodule BSV.Crypto.ECDSA.PrivateKey do
 
   @typedoc "ECDSA Private Key"
   @type t :: %__MODULE__{
-    version: integer,
-    private_key: binary,
-    parameters: tuple,
-    public_key: binary,
-  }
+          version: integer,
+          private_key: binary,
+          parameters: tuple,
+          public_key: binary
+        }
 
   @typedoc "Erlang ECDSA Private Key sequence"
   @type sequence :: {
-    :ECPrivateKey,
-    integer,
-    binary,
-    tuple,
-    binary,
-    atom # attributes
-  }
-
+          :ECPrivateKey,
+          integer,
+          binary,
+          tuple,
+          binary,
+          # attributes
+          atom
+        }
 
   @doc """
   Converts the given Erlang ECDSA key sequence to a ECDSA private key.
@@ -34,16 +34,15 @@ defmodule BSV.Crypto.ECDSA.PrivateKey do
       ...> ecdsa_key.__struct__ == BSV.Crypto.ECDSA.PrivateKey
       true
   """
-  @spec from_sequence(BSV.Crypto.ECDSA.sequence) :: BSV.Crypto.ECDSA.PrivateKey.t
+  @spec from_sequence(BSV.Crypto.ECDSA.sequence()) :: BSV.Crypto.ECDSA.PrivateKey.t()
   def from_sequence(ecdsa_key_sequence) do
-    struct(__MODULE__, [
+    struct(__MODULE__,
       version: elem(ecdsa_key_sequence, 1),
       private_key: elem(ecdsa_key_sequence, 2),
       parameters: elem(ecdsa_key_sequence, 3),
       public_key: elem(ecdsa_key_sequence, 4)
-    ])
+    )
   end
-
 
   @doc """
   Converts the given ECDSA private key to an Erlang ECDSA key sequence.
@@ -57,7 +56,7 @@ defmodule BSV.Crypto.ECDSA.PrivateKey do
       ...> |> is_tuple
       true
   """
-  @spec as_sequence(BSV.Crypto.ECDSA.PrivateKey.t) :: BSV.Crypto.ECDSA.PrivateKey.sequence
+  @spec as_sequence(BSV.Crypto.ECDSA.PrivateKey.t()) :: BSV.Crypto.ECDSA.PrivateKey.sequence()
   def as_sequence(ecdsa_key) do
     {
       :ECPrivateKey,
@@ -69,7 +68,6 @@ defmodule BSV.Crypto.ECDSA.PrivateKey do
     }
   end
 
-
   @doc """
   Returns the public key from the given ECDSA private key.
 
@@ -80,11 +78,10 @@ defmodule BSV.Crypto.ECDSA.PrivateKey do
       ...> public_key.__struct__ == BSV.Crypto.ECDSA.PublicKey
       true
   """
-  @spec get_public_key(BSV.Crypto.ECDSA.PrivateKey.t) :: BSV.Crypto.ECDSA.PublicKey.t
+  @spec get_public_key(BSV.Crypto.ECDSA.PrivateKey.t()) :: BSV.Crypto.ECDSA.PublicKey.t()
   def get_public_key(ecdsa_key) do
     %PublicKey{
       point: ecdsa_key.public_key
     }
   end
-  
 end
