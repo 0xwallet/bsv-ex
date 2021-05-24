@@ -20,7 +20,8 @@ defmodule BSV.Crypto.ECDSA.PrivateKey do
     integer,
     binary,
     tuple,
-    binary
+    binary,
+    atom # attributes
   }
 
 
@@ -63,7 +64,8 @@ defmodule BSV.Crypto.ECDSA.PrivateKey do
       ecdsa_key.version,
       ecdsa_key.private_key,
       ecdsa_key.parameters,
-      ecdsa_key.public_key
+      ecdsa_key.public_key,
+      :asn1_NOVALUE
     }
   end
 
