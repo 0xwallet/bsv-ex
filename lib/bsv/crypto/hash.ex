@@ -6,13 +6,11 @@ defmodule BSV.Crypto.Hash do
 
   @hash_algorithms [:md5, :ripemd160, :sha, :sha224, :sha256, :sha384, :sha512]
 
-
   @doc """
   Returns a list of supported hash algorithms.
   """
   @spec hash_algorithms :: list
   def hash_algorithms, do: @hash_algorithms
-
 
   @doc """
   Computes a hash of the given data, using the specified hash algorithm.
@@ -47,17 +45,17 @@ defmodule BSV.Crypto.Hash do
   @spec hash(binary, atom, keyword) :: binary
   def hash(data, algorithm, options \\ []) do
     encoding = Keyword.get(options, :encoding)
+
     :crypto.hash(algorithm, data)
     |> Util.encode(encoding)
   end
 
-
   def hmac(data, algorithm, key, options \\ []) do
     encoding = Keyword.get(options, :encoding)
+
     :crypto.hmac(algorithm, key, data)
     |> Util.encode(encoding)
   end
-
 
   @doc """
   Computes the RIPEMD hash of a given input, outputting 160 bits.
@@ -75,7 +73,6 @@ defmodule BSV.Crypto.Hash do
   @spec ripemd160(binary, keyword) :: binary
   def ripemd160(data, options \\ []), do: hash(data, :ripemd160, options)
 
-
   @doc """
   Computes the SHA-1 hash of a given input, outputting 160 bits.
 
@@ -91,7 +88,6 @@ defmodule BSV.Crypto.Hash do
   """
   @spec sha1(binary, keyword) :: binary
   def sha1(data, options \\ []), do: hash(data, :sha, options)
-
 
   @doc """
   Computes the SHA-2 hash of a given input, outputting 256 bits.
@@ -109,7 +105,6 @@ defmodule BSV.Crypto.Hash do
   @spec sha256(binary, keyword) :: binary
   def sha256(data, options \\ []), do: hash(data, :sha256, options)
 
-
   @doc """
   Computes the SHA-2 hash of a given input, outputting 512 bits.
 
@@ -125,7 +120,6 @@ defmodule BSV.Crypto.Hash do
   """
   @spec sha512(binary, keyword) :: binary
   def sha512(data, options \\ []), do: hash(data, :sha512, options)
-
 
   @doc """
   Computes a RIPEMD0160 hash of a SHA256 hash, outputting 160 bits. This is
@@ -144,7 +138,6 @@ defmodule BSV.Crypto.Hash do
   @spec sha256_ripemd160(binary, keyword) :: binary
   def sha256_ripemd160(data, options \\ []), do: sha256(data) |> hash(:ripemd160, options)
 
-
   @doc """
   Computes a double SHA256 hash. This hash function is commonly used inside
   Bitcoin, particularly for the hash of a block and the hash of a transaction.
@@ -161,5 +154,4 @@ defmodule BSV.Crypto.Hash do
   """
   @spec sha256_sha256(binary, keyword) :: binary
   def sha256_sha256(data, options \\ []), do: sha256(data) |> hash(:sha256, options)
-
 end
