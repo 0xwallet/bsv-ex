@@ -14,28 +14,19 @@ defmodule BSV.Crypto.ECDSA.PrivateKey do
           public_key: binary
         }
 
-  defmodule ErlangRecord do
-    require Record
+  require Record
 
-    ec_private_key_record_info =
-      Record.extract(:ECPrivateKey, from_lib: "public_key/asn1/OTP-PUB-KEY.hrl")
+  @record_info Record.extract(:ECPrivateKey, from_lib: "public_key/asn1/OTP-PUB-KEY.hrl")
+  Record.defrecord(:ec_private_key, :ECPrivateKey, @record_info)
 
-    Record.defrecord(:ec_private_key, :ECPrivateKey, ec_private_key_record_info)
-
-    @typedoc "Erlang ECDSA Private Key record"
-    @type ec_private_key ::
-            {
-              :ECPrivateKey,
-              # version
-              integer | :undefined,
-              # privateKey
-              binary | :undefined,
-              # parameters
-              tuple | :asn1_NOVALUE,
-              # publicKey
-              binary | :asn1_NOVALUE
-            }
-  end
+  @typedoc "Erlang ECDSA Private Key record"
+  @type sequence ::
+          record(:ec_private_key,
+            version: integer | :undefined,
+            privateKey: binary | :undefined,
+            parameters: tuple | :asn1_NOVALUE,
+            publicKey: binary | :asn1_NOVALUE
+          )
 
   @doc """
   Converts the given Erlang ECDSA key sequence to a ECDSA private key.
@@ -68,11 +59,8 @@ defmodule BSV.Crypto.ECDSA.PrivateKey do
       ...> |> is_tuple
       true
   """
-  @spec as_sequence(BSV.Crypto.ECDSA.PrivateKey.t()) ::
-          BSV.Crypto.ECDSA.PrivateKey.ErlangRecord.ec_private_key()
+  @spec as_sequence(BSV.Crypto.ECDSA.PrivateKey.t()) :: BSV.Crypto.ECDSA.PrivateKey.sequence()
   def as_sequence(ecdsa_key) do
-    import BSV.Crypto.ECDSA.PrivateKey.ErlangRecord
-
     ec_private_key(
       version: ecdsa_key.version,
       privateKey: ecdsa_key.private_key,
